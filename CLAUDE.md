@@ -50,7 +50,10 @@ viewer (`mcpgate ui`, `internal/logview`), a token-gated localhost config editor
 (`mcpgate config-ui`, `internal/configui` — Host allowlist vs rebinding, Origin
 check vs CSRF, per-run token; refuses to bind off localhost), a test suite that doubles as a spec
 (`TestMoneyShot_...`, `TestHTTP_*`, `TestGate_ArgAllowlist`), and a demo agent
-(`cmd/agent`) that follows an injected instruction live and hits the gate. Both transports run the
+(`cmd/agent`) that follows an injected instruction live and hits the gate, plus
+a realistic Gmail-triage demo (`demo/gmail.sh`: `cmd/fakegmail` + `cmd/gmail-agent`
+sharing `internal/mcpclient`) that shows the same agent breaching without the
+gateway and safe through it. Both transports run the
 same `Hook`. Module path is `github.com/gazillion101/mcpgate` (personal nick,
 NOT yovico — kept separate for now).
 TODO: interactive approval path for `gated` tools, best-effort taint,

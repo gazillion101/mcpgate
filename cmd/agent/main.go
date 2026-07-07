@@ -13,7 +13,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/gazillion101/mcpgate/internal/mcpclient"
 )
+
+// Tool aliases the shared client's Tool so brain.go's signatures stay unchanged.
+type Tool = mcpclient.Tool
 
 func main() {
 	flagArgs, server := splitAt(os.Args[1:], "--")
@@ -27,7 +32,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	c, err := Dial(server)
+	c, err := mcpclient.Dial(server)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "dial:", err)
 		os.Exit(1)

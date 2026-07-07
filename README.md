@@ -141,6 +141,19 @@ of the read result, and the `send_email` the injection asked for denied at the
 gate. `demo/run.sh` finishes by running `cmd/agent` — a real read→reason→act
 loop — so you watch the agent act on the email's hidden instruction and the gate stop it.
 
+**The realistic one — `./demo/gmail.sh`.** A "read my inbox and tell me what's
+important" agent against a Gmail-shaped server whose inbox holds four ordinary
+emails and one attack disguised as an overdue-invoice notice. It runs the *same
+agent, same inbox* twice — first straight to Gmail, then through mcpgate:
+
+```
+1) WITHOUT mcpgate → the agent reports the important emails AND, obeying the
+   hidden instruction, forwards the inbox to an outside address and deletes the
+   evidence. Nothing stops it.
+2) THROUGH mcpgate → same triage report, but send_message and delete_message are
+   denied at the gate. The injection fired; your data is safe.
+```
+
 ## Tests
 
 `go test ./...` — the suite doubles as an executable spec. Highlights:
@@ -154,7 +167,10 @@ thesis in one test.
 ```
 cmd/mcpgate    the proxy binary
 cmd/fakemcp    a poisoned-email MCP server for the demo
+cmd/fakegmail  a Gmail-shaped MCP server: a realistic inbox with one attack email
 cmd/agent      a tiny demo agent (credulous offline brain, or real Claude with ANTHROPIC_API_KEY)
+cmd/gmail-agent a "triage my inbox" agent that gets targeted by the attack email
+internal/mcpclient minimal MCP stdio client, shared by the demo agents
 internal/proxy transparent stdio pump (spawn child, two pumps, hook dispatch)
 internal/jsonrpc  line-framed JSON-RPC, byte-faithful passthrough
 internal/hook  the firewall: gate on tools/call request, redact on result

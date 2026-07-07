@@ -1,0 +1,12 @@
+{
+  "redact": "gliner",
+
+  "readTools": ["list_messages", "get_message", "search"],
+  "actionTools": ["send_message", "delete_message", "modify_labels"],
+
+  "argAllow": {
+    "send_message": ["*@yourcompany.com"]
+  },
+
+  "auditFile": "~/.local/share/mcpgate/gmail.jsonl"
+}

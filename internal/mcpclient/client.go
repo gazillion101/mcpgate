@@ -1,4 +1,7 @@
-package main
+// Package mcpclient is a minimal MCP stdio client, shared by the demo agents.
+// It spawns the server command (in the demos, `mcpgate -- <real server>`), so
+// every call goes through the gate.
+package mcpclient
 
 import (
 	"bufio"
@@ -10,8 +13,6 @@ import (
 	"strconv"
 )
 
-// Client is a minimal MCP stdio client: it spawns the server command (which, in
-// the demo, is `mcpgate -- <real server>`), so every call goes through the gate.
 type Client struct {
 	cmd *exec.Cmd
 	in  io.WriteCloser
@@ -31,6 +32,7 @@ type Tool struct {
 	InputSchema json.RawMessage `json:"inputSchema"`
 }
 
+// Dial spawns command and returns a connected client.
 func Dial(command []string) (*Client, error) {
 	cmd := exec.Command(command[0], command[1:]...)
 	stdin, err := cmd.StdinPipe()
