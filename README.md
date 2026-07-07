@@ -1,9 +1,9 @@
 # mcpgate
 
-> **A firewall for AI agents.** It sits between an MCP client and its tools,
-> redacts injected instructions out of what the agent reads, and denies the
-> dangerous tool calls a hijacked agent tries to make — so prompt injection
-> *fires and reaches nothing*.
+> **A firewall for AI agents that work on untrusted input.** It sits between an
+> agent and its tools and redacts hidden instructions out of the content the
+> agent reads — emails, web pages, tool results — before they reach the model,
+> then blocks the risky tool calls those instructions would trigger.
 
 _Open source (Apache-2.0) · Go, stdlib-only · stdio + Streamable HTTP · a working spike._
 
@@ -16,9 +16,8 @@ and notifications verbatim. But now every tool result is filtered on the way in,
 and every action tool call is gated on the way out.
 
 **Motivating example:** [protecting an OpenClaw personal agent](examples/openclaw.md)
-— an unattended, unfettered-access agent that reads untrusted email and gets
-hijacked; the gate is the only thing between "read a hostile email" and
-"arbitrary shell as you."
+— an unattended agent with broad access reads a booby-trapped email; mcpgate
+keeps the hidden instruction from turning into arbitrary shell access.
 
 ## Why the tool boundary (and not the prompt)
 
@@ -100,7 +99,7 @@ sidecar/.venv/bin/python sidecar/redactor.py      # serves :8731
 and `send_email` (the sink). Through mcpgate you see the injection redacted out
 of the read result, and the `send_email` the injection asked for denied at the
 gate. `demo/run.sh` finishes by running `cmd/agent` — a real read→reason→act
-loop — so you watch an agent get hijacked by the email and the gate stop it.
+loop — so you watch the agent act on the email's hidden instruction and the gate stop it.
 
 ## Tests
 
@@ -131,6 +130,6 @@ Spike. Working end-to-end: transparent stdio pump **and** Streamable-HTTP
 reverse proxy (with in-stream SSE redaction), the capability gate with
 per-argument allowlists (deny `send_email` to any address off the list), the
 GLiNER filter, the audit trail, a test suite that doubles as a spec, and a demo
-agent that gets hijacked live and hits the gate (`./demo/run.sh`,
+agent that follows an injected instruction and hits the gate (`./demo/run.sh`,
 `./demo/http.sh`). Not done: an interactive approval path for `gated` tools,
 best-effort taint, and the forward-MITM (fleet) proxy mode.

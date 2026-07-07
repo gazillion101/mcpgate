@@ -45,7 +45,7 @@ swap, in-stream SSE redaction, `internal/proxy/http.go`), capability gate,
 GLiNER filter, per-argument allowlists (`--arg-allow`, deny send to non-listed
 recipients; `internal/extract`), audit, a test suite that doubles as a spec
 (`TestMoneyShot_...`, `TestHTTP_*`, `TestGate_ArgAllowlist`), and a demo agent
-(`cmd/agent`) that gets hijacked live and hits the gate. Both transports run the
+(`cmd/agent`) that follows an injected instruction live and hits the gate. Both transports run the
 same `Hook`. Module path is `github.com/gazillion101/mcpgate` (personal nick,
 NOT yovico — kept separate for now).
 TODO: interactive approval path for `gated` tools, best-effort taint,
