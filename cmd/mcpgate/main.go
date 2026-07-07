@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,12 +23,19 @@ import (
 	"github.com/gazillion101/mcpgate/internal/audit"
 	"github.com/gazillion101/mcpgate/internal/config"
 	"github.com/gazillion101/mcpgate/internal/hook"
+	"github.com/gazillion101/mcpgate/internal/logview"
 	"github.com/gazillion101/mcpgate/internal/policy"
 	"github.com/gazillion101/mcpgate/internal/proxy"
 	"github.com/gazillion101/mcpgate/internal/redact"
 )
 
 func main() {
+	// `mcpgate ui` is a read-only local viewer for the audit file.
+	if len(os.Args) > 1 && os.Args[1] == "ui" {
+		runUI(os.Args[2:])
+		return
+	}
+
 	flagArgs, serverCmd := splitArgs(os.Args[1:])
 
 	fs := newFlags()
@@ -154,6 +162,25 @@ func splitArgs(args []string) (flagArgs, upstream []string) {
 		}
 	}
 	return args, nil
+}
+
+// runUI serves the read-only audit viewer on localhost.
+func runUI(args []string) {
+	fs := flag.NewFlagSet("mcpgate ui", flag.ExitOnError)
+	auditFile := fs.String("audit-file", "", "audit JSONL file to view (required)")
+	listen := fs.String("listen", "127.0.0.1:8788", "localhost address to serve on")
+	_ = fs.Parse(args)
+	if *auditFile == "" {
+		fatal("mcpgate ui: --audit-file is required")
+	}
+	if !strings.HasPrefix(*listen, "127.0.0.1") && !strings.HasPrefix(*listen, "localhost") {
+		fmt.Fprintln(os.Stderr, "mcpgate ui: WARNING — the audit log holds attacker payloads; keep --listen on localhost")
+	}
+	srv := &logview.Server{AuditFile: expandHome(*auditFile), MaxLines: 2000}
+	fmt.Fprintf(os.Stderr, "mcpgate ui: http://%s  (viewing %s)\n", *listen, *auditFile)
+	if err := http.ListenAndServe(*listen, srv); err != nil {
+		fatal(err.Error())
+	}
 }
 
 // expandHome resolves a leading ~/ against the user's home directory.

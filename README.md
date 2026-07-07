@@ -103,6 +103,16 @@ file (handy for one-off tweaks). See [`examples/config.example.json`](examples/c
            "args": ["--config", "/etc/mcpgate/gmail.json", "--", "npx", "@mcp/server-gmail"] }
 ```
 
+**View the log.** With `auditFile` (or `--audit-file`) set, watch what your agent
+did — and what got flagged — in a read-only localhost page:
+
+```bash
+mcpgate ui --audit-file ~/.local/share/mcpgate/audit.jsonl   # → http://127.0.0.1:8788
+```
+
+Caught injections and denials are highlighted, with the offending payload shown.
+It only reads the file; keep it on localhost (the log holds attacker payloads).
+
 ## Quickstart / demo
 
 ```bash
@@ -143,6 +153,7 @@ internal/extract email/URL extraction from tool args (for argument allowlists)
 internal/redact the ingress filter: builtin stub + GLiNER sidecar client
 internal/config JSON config loading; flags override the file
 internal/audit  JSONL audit; caught injections + denials flagged at WARN with payload
+internal/logview read-only localhost audit viewer (`mcpgate ui`)
 sidecar/       GLiNER redaction service (Python)
 ```
 
@@ -153,8 +164,8 @@ reverse proxy (with in-stream SSE redaction), the capability gate with
 per-argument allowlists (deny `send_email` to any address off the list), the
 GLiNER filter, a JSON config file (`--config`; flags override it), an audit
 trail that flags every caught injection and denial at WARN — with the payload —
-and can persist to a file (`--audit-file`), a test suite that doubles as a spec,
-and a demo
+and can persist to a file (`--audit-file`), a read-only localhost log viewer
+(`mcpgate ui`), a test suite that doubles as a spec, and a demo
 agent that follows an injected instruction and hits the gate (`./demo/run.sh`,
 `./demo/http.sh`). Not done: an interactive approval path for `gated` tools,
 best-effort taint, and the forward-MITM (fleet) proxy mode.
