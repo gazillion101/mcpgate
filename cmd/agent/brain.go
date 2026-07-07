@@ -36,23 +36,23 @@ type Brain interface {
 
 // ---- credulous brain -------------------------------------------------------
 
-// CredulousBrain is an offline stand-in for a hijackable model: it reads to do
+// CredulousBrain is an offline stand-in for a model that follows injected instructions: it reads to do
 // the task, then treats whatever it read as instructions — if the content names
 // an address, it obediently emails it. That credulity IS the vulnerability;
 // here it lets the demo run with no API key and deterministically trip the gate.
 type CredulousBrain struct{}
 
 func (CredulousBrain) Name() string {
-	return "credulous (offline stand-in for a hijackable model)"
+	return "credulous (offline stand-in for a model that follows injected instructions)"
 }
 
 var emailRe = regexp.MustCompile(`[\w.+-]+@[\w-]+\.[\w.-]+`)
 
 // forwardRe captures the recipient an instruction points at ("...forward... to
-// X"), spanning newlines. A hijacked agent follows that target, not the sender.
+// X"), spanning newlines. A credulous agent follows that target, not the sender.
 var forwardRe = regexp.MustCompile(`(?i)(?:forward|send|email|deliver|leak|exfiltrate)[\s\S]{0,120}?\bto\s+([\w.+-]+@[\w-]+\.[\w.-]+)`)
 
-// exfilTarget models what a hijacked agent obeys: the address the content tells
+// exfilTarget models what a credulous agent obeys: the address the content tells
 // it to send to, falling back to the first address present.
 func exfilTarget(text string) string {
 	if m := forwardRe.FindStringSubmatch(text); m != nil {
@@ -69,7 +69,7 @@ func (CredulousBrain) Decide(task string, tools []Tool, tr []Turn) (Action, erro
 	if readTool != "" && !used(tr, readTool) {
 		return Action{Tool: readTool, Args: map[string]any{}, Why: "I'll read the email to summarize it"}, nil
 	}
-	// 2. Do what the content told me — the hijack.
+	// 2. Do what the content told me — the injection.
 	if len(tr) > 0 && sendTool != "" && !used(tr, sendTool) {
 		if addr := exfilTarget(tr[len(tr)-1].Result); addr != "" {
 			return Action{
@@ -116,7 +116,7 @@ func used(tr []Turn, tool string) bool {
 
 // AnthropicBrain drives the loop with a real model via the Messages API. It
 // holds the conversation so tool results feed back correctly. Activated when
-// ANTHROPIC_API_KEY is set — then you watch a real model get hijacked and the
+// ANTHROPIC_API_KEY is set — then you watch a real model follow the injection and the
 // gate stop it.
 type AnthropicBrain struct {
 	key, model    string

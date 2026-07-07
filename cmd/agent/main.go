@@ -1,11 +1,11 @@
 // agent is a tiny demonstration agent. It speaks MCP as a client to a server
 // launched THROUGH mcpgate, runs a read->reason->act loop, and shows an agent
-// getting hijacked by a poisoned tool result — and the gate stopping the action.
+// acting on a poisoned tool result — and the gate stopping the action.
 //
 //	agent [--task "..."] -- mcpgate [gate flags] -- <real server>
 //
 // With ANTHROPIC_API_KEY set it drives a real model; otherwise a credulous
-// offline brain stands in for a hijackable one.
+// offline brain stands in for one that follows injected instructions.
 package main
 
 import (
