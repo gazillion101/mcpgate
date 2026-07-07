@@ -1,0 +1,12 @@
+# Python sidecar virtualenv + caches
+sidecar/.venv/
+__pycache__/
+*.pyc
+
+# local build artifacts
+/mcpgate
+/fakemcp
+/agent
+*.out
+
+.DS_Store
