@@ -53,7 +53,12 @@ check vs CSRF, per-run token; refuses to bind off localhost), a test suite that 
 (`cmd/agent`) that follows an injected instruction live and hits the gate, plus
 a realistic Gmail-triage demo (`demo/gmail.sh`: `cmd/fakegmail` + `cmd/gmail-agent`
 sharing `internal/mcpclient`) that shows the same agent breaching without the
-gateway and safe through it. Both transports run the
+gateway and safe through it — and `demo/gmail-llm.sh`, the same with a REAL model
+(`internal/llm` speaks OpenAI Chat Completions → Ollama locally or LiteLLM for
+Claude/DeepSeek/Gemini/OpenAI; verified live: qwen2.5-14b gets injected and the
+gate blocks send/delete). Note: `fakegmail` list returns ids only (like real
+Gmail) so the agent must open each message — that's how the poisoned body is read.
+Both transports run the
 same `Hook`. Module path is `github.com/gazillion101/mcpgate` (personal nick,
 NOT yovico — kept separate for now).
 TODO: interactive approval path for `gated` tools, best-effort taint,

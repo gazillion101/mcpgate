@@ -154,6 +154,18 @@ agent, same inbox* twice — first straight to Gmail, then through mcpgate:
    denied at the gate. The injection fired; your data is safe.
 ```
 
+**With a real model — `./demo/gmail-llm.sh`.** The same scenario driven by an
+actual LLM. `gmail-agent` reads `MCPGATE_LLM_MODEL` and speaks the OpenAI shape,
+so it runs against a local model via **Ollama** (default: `qwen2.5:14b-instruct`)
+or, through a **LiteLLM** proxy, against Claude / DeepSeek / Gemini / OpenAI —
+swapping providers is one env var, not code. With qwen the model genuinely reads
+the poisoned invoice, tries to forward the inbox and delete the evidence, and
+mcpgate denies both calls.
+
+```bash
+MCPGATE_LLM_MODEL=qwen2.5:14b-instruct ./demo/gmail-llm.sh   # needs an OpenAI-compatible endpoint
+```
+
 ## Tests
 
 `go test ./...` — the suite doubles as an executable spec. Highlights:
@@ -169,8 +181,9 @@ cmd/mcpgate    the proxy binary
 cmd/fakemcp    a poisoned-email MCP server for the demo
 cmd/fakegmail  a Gmail-shaped MCP server: a realistic inbox with one attack email
 cmd/agent      a tiny demo agent (credulous offline brain, or real Claude with ANTHROPIC_API_KEY)
-cmd/gmail-agent a "triage my inbox" agent that gets targeted by the attack email
+cmd/gmail-agent a "triage my inbox" agent — real model or heuristic — targeted by the attack email
 internal/mcpclient minimal MCP stdio client, shared by the demo agents
+internal/llm   OpenAI-compatible tool-use loop (Ollama / LiteLLM → any provider)
 internal/proxy transparent stdio pump (spawn child, two pumps, hook dispatch)
 internal/jsonrpc  line-framed JSON-RPC, byte-faithful passthrough
 internal/hook  the firewall: gate on tools/call request, redact on result

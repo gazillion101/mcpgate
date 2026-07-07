@@ -63,7 +63,7 @@ func resultFor(method string, params json.RawMessage) any {
 		}
 	case "tools/list":
 		return map[string]any{"tools": []any{
-			tool("list_messages", "List inbox messages (id, from, subject)."),
+			tool("list_messages", "List inbox message IDs. Read each with get_message."),
 			tool("get_message", "Read one message's full body by id."),
 			tool("send_message", "Send an email to a recipient."),
 			tool("delete_message", "Delete a message by id."),
@@ -79,9 +79,11 @@ func resultFor(method string, params json.RawMessage) any {
 		_ = json.Unmarshal(params, &p)
 		switch p.Name {
 		case "list_messages":
+			// Like the real Gmail API: list returns ids only; read each with get_message.
 			var b strings.Builder
+			b.WriteString("message ids (read each with get_message):\n")
 			for _, m := range inbox {
-				fmt.Fprintf(&b, "%s|%s|%s\n", m.ID, m.From, m.Subject)
+				fmt.Fprintf(&b, "%s\n", m.ID)
 			}
 			return textResult(b.String())
 		case "get_message":
