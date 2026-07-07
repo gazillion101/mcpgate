@@ -46,7 +46,9 @@ GLiNER filter, per-argument allowlists (`--arg-allow`, deny send to non-listed
 recipients; `internal/extract`), a JSON config file (`--config`, flags override
 it; `internal/config`), audit — caught injections + denials flagged at WARN with
 the payload span, optional `--audit-file` JSONL sink — a read-only localhost log
-viewer (`mcpgate ui`, `internal/logview`), a test suite that doubles as a spec
+viewer (`mcpgate ui`, `internal/logview`), a token-gated localhost config editor
+(`mcpgate config-ui`, `internal/configui` — Host allowlist vs rebinding, Origin
+check vs CSRF, per-run token; refuses to bind off localhost), a test suite that doubles as a spec
 (`TestMoneyShot_...`, `TestHTTP_*`, `TestGate_ArgAllowlist`), and a demo agent
 (`cmd/agent`) that follows an injected instruction live and hits the gate. Both transports run the
 same `Hook`. Module path is `github.com/gazillion101/mcpgate` (personal nick,

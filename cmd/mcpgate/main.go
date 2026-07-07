@@ -22,6 +22,7 @@ import (
 
 	"github.com/gazillion101/mcpgate/internal/audit"
 	"github.com/gazillion101/mcpgate/internal/config"
+	"github.com/gazillion101/mcpgate/internal/configui"
 	"github.com/gazillion101/mcpgate/internal/hook"
 	"github.com/gazillion101/mcpgate/internal/logview"
 	"github.com/gazillion101/mcpgate/internal/policy"
@@ -33,6 +34,11 @@ func main() {
 	// `mcpgate ui` is a read-only local viewer for the audit file.
 	if len(os.Args) > 1 && os.Args[1] == "ui" {
 		runUI(os.Args[2:])
+		return
+	}
+	// `mcpgate config-ui` is a locked-down local editor for the config file.
+	if len(os.Args) > 1 && os.Args[1] == "config-ui" {
+		runConfigUI(os.Args[2:])
 		return
 	}
 
@@ -61,7 +67,7 @@ func main() {
 		auditW = io.MultiWriter(os.Stderr, f)
 	}
 	a := audit.New(auditW)
-	gate := policy.New(classesFrom(cfg.ReadTools, cfg.ActionTools), cfg.AllowActions, cfg.ArgAllow)
+	gate := policy.New(classesFrom(cfg.ReadTools, cfg.ActionTools, cfg.GatedTools), cfg.AllowActions, cfg.ArgAllow)
 	redactor := buildRedactor(cfg)
 	fw := hook.New(gate, redactor, a)
 
@@ -115,13 +121,16 @@ type noopRedactor struct{}
 func (noopRedactor) Redact(t string) (string, []redact.Span, error) { return t, nil, nil }
 func (noopRedactor) Name() string                                   { return "off" }
 
-func classesFrom(read, action []string) map[string]policy.Class {
+func classesFrom(read, action, gated []string) map[string]policy.Class {
 	classes := map[string]policy.Class{}
 	for _, t := range read {
 		classes[t] = policy.Read
 	}
 	for _, t := range action {
 		classes[t] = policy.Action
+	}
+	for _, t := range gated {
+		classes[t] = policy.Gated
 	}
 	return classes
 }
@@ -178,6 +187,29 @@ func runUI(args []string) {
 	}
 	srv := &logview.Server{AuditFile: expandHome(*auditFile), MaxLines: 2000}
 	fmt.Fprintf(os.Stderr, "mcpgate ui: http://%s  (viewing %s)\n", *listen, *auditFile)
+	if err := http.ListenAndServe(*listen, srv); err != nil {
+		fatal(err.Error())
+	}
+}
+
+// runConfigUI serves the locked-down local config editor. Unlike the read-only
+// viewer, this can change policy, so it refuses to bind off localhost and gates
+// every edit behind a per-run token.
+func runConfigUI(args []string) {
+	fs := flag.NewFlagSet("mcpgate config-ui", flag.ExitOnError)
+	configPath := fs.String("config", "", "JSON config file to edit (required)")
+	listen := fs.String("listen", "127.0.0.1:8799", "localhost address to serve on")
+	_ = fs.Parse(args)
+	if *configPath == "" {
+		fatal("mcpgate config-ui: --config is required")
+	}
+	if !strings.HasPrefix(*listen, "127.0.0.1") && !strings.HasPrefix(*listen, "localhost") {
+		fatal("mcpgate config-ui: refusing to bind a write endpoint off localhost (" + *listen + ")")
+	}
+	token := configui.NewToken()
+	srv := &configui.Server{ConfigPath: expandHome(*configPath), Token: token}
+	fmt.Fprintf(os.Stderr, "mcpgate config-ui: open  http://%s/?token=%s\n", *listen, token)
+	fmt.Fprintln(os.Stderr, "  (localhost only; the token gates every edit — don't share the URL)")
 	if err := http.ListenAndServe(*listen, srv); err != nil {
 		fatal(err.Error())
 	}

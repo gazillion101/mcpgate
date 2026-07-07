@@ -19,6 +19,7 @@ type Config struct {
 	AllowActions bool                `json:"allowActions,omitempty"` // permit action tools without a grant
 	ReadTools    []string            `json:"readTools,omitempty"`    // classified read (results filtered, calls flow)
 	ActionTools  []string            `json:"actionTools,omitempty"`  // classified action (calls gated)
+	GatedTools   []string            `json:"gatedTools,omitempty"`   // classified gated (require approval; denied for now)
 	ArgAllow     map[string][]string `json:"argAllow,omitempty"`     // per-tool argument allowlists (globs)
 	HTTPListen   string              `json:"httpListen,omitempty"`   // Streamable-HTTP proxy listen addr
 	Upstream     string              `json:"upstream,omitempty"`     // upstream MCP URL (with httpListen)
@@ -60,6 +61,7 @@ type Overrides struct {
 	AllowActions *bool
 	ReadTools    *[]string
 	ActionTools  *[]string
+	GatedTools   *[]string
 	ArgAllow     *map[string][]string
 	HTTPListen   *string
 	Upstream     *string
@@ -85,6 +87,9 @@ func (c *Config) Apply(o Overrides) {
 	}
 	if o.ActionTools != nil {
 		c.ActionTools = *o.ActionTools
+	}
+	if o.GatedTools != nil {
+		c.GatedTools = *o.GatedTools
 	}
 	if o.ArgAllow != nil {
 		c.ArgAllow = *o.ArgAllow

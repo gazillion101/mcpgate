@@ -113,6 +113,16 @@ mcpgate ui --audit-file ~/.local/share/mcpgate/audit.jsonl   # → http://127.0.
 Caught injections and denials are highlighted, with the offending payload shown.
 It only reads the file; keep it on localhost (the log holds attacker payloads).
 
+**Edit the policy in a browser.** `mcpgate config-ui` serves a form to edit the
+config file (tool classes, argument allowlists, redaction). It's a *write*
+surface, so it's locked down: localhost-only, a per-run token gating every edit,
+a Host allowlist (defeats DNS-rebinding), and a same-origin check (defeats CSRF):
+
+```bash
+mcpgate config-ui --config ~/.config/mcpgate/gmail.json
+# → open http://127.0.0.1:8799/?token=<printed-token>
+```
+
 ## Quickstart / demo
 
 ```bash
@@ -154,6 +164,7 @@ internal/redact the ingress filter: builtin stub + GLiNER sidecar client
 internal/config JSON config loading; flags override the file
 internal/audit  JSONL audit; caught injections + denials flagged at WARN with payload
 internal/logview read-only localhost audit viewer (`mcpgate ui`)
+internal/configui token-gated localhost config editor (`mcpgate config-ui`)
 sidecar/       GLiNER redaction service (Python)
 ```
 
@@ -165,7 +176,9 @@ per-argument allowlists (deny `send_email` to any address off the list), the
 GLiNER filter, a JSON config file (`--config`; flags override it), an audit
 trail that flags every caught injection and denial at WARN — with the payload —
 and can persist to a file (`--audit-file`), a read-only localhost log viewer
-(`mcpgate ui`), a test suite that doubles as a spec, and a demo
+(`mcpgate ui`), a token-gated localhost config editor (`mcpgate config-ui`), a
+test suite that doubles as a spec, and a demo
 agent that follows an injected instruction and hits the gate (`./demo/run.sh`,
-`./demo/http.sh`). Not done: an interactive approval path for `gated` tools,
-best-effort taint, and the forward-MITM (fleet) proxy mode.
+`./demo/http.sh`). Not done: an interactive **approval** flow so `gated` tools
+pause for a human instead of a hard deny, best-effort taint, and the
+forward-MITM (fleet) proxy mode.
