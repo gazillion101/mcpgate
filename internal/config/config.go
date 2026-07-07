@@ -22,6 +22,7 @@ type Config struct {
 	ArgAllow     map[string][]string `json:"argAllow,omitempty"`     // per-tool argument allowlists (globs)
 	HTTPListen   string              `json:"httpListen,omitempty"`   // Streamable-HTTP proxy listen addr
 	Upstream     string              `json:"upstream,omitempty"`     // upstream MCP URL (with httpListen)
+	AuditFile    string              `json:"auditFile,omitempty"`    // append JSONL audit here (in addition to stderr)
 }
 
 // Default returns the built-in defaults, used when no config file is given and
@@ -62,6 +63,7 @@ type Overrides struct {
 	ArgAllow     *map[string][]string
 	HTTPListen   *string
 	Upstream     *string
+	AuditFile    *string
 }
 
 // Apply overlays any set overrides onto the config (flags beat the file).
@@ -92,5 +94,8 @@ func (c *Config) Apply(o Overrides) {
 	}
 	if o.Upstream != nil {
 		c.Upstream = *o.Upstream
+	}
+	if o.AuditFile != nil {
+		c.AuditFile = *o.AuditFile
 	}
 }

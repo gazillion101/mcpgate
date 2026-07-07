@@ -75,25 +75,33 @@ func labelOr(s, def string) string {
 	return s
 }
 
+// Finding is one span that was stripped from a tool result. Text is the
+// offending payload itself — safe and desirable to log, because it's the
+// attacker's instruction, not the user's private data (unlike tool arguments).
+type Finding struct {
+	Label string  `json:"label"`
+	Score float64 `json:"score"`
+	Text  string  `json:"text"`
+}
+
 // RedactToolResult redacts the text content blocks of a `tools/call` result,
-// preserving every other field. Returns the new result bytes, the number of
-// spans removed, and the distinct labels seen.
-func RedactToolResult(result json.RawMessage, r Redactor) (json.RawMessage, int, []string, error) {
+// preserving every other field. It returns the new result bytes and one Finding
+// per stripped span, so each caught injection can be logged and flagged.
+func RedactToolResult(result json.RawMessage, r Redactor) (json.RawMessage, []Finding, error) {
 	var res map[string]json.RawMessage
 	if err := json.Unmarshal(result, &res); err != nil {
-		return result, 0, nil, err // not a shape we redact; forward as-is
+		return result, nil, err // not a shape we redact; forward as-is
 	}
 	rawContent, ok := res["content"]
 	if !ok {
-		return result, 0, nil, nil
+		return result, nil, nil
 	}
 	var blocks []map[string]json.RawMessage
 	if err := json.Unmarshal(rawContent, &blocks); err != nil {
-		return result, 0, nil, nil
+		return result, nil, nil
 	}
 
-	total := 0
-	labelSet := map[string]struct{}{}
+	var findings []Finding
 	for _, b := range blocks {
 		if string(b["type"]) != `"text"` {
 			continue
@@ -106,29 +114,45 @@ func RedactToolResult(result json.RawMessage, r Redactor) (json.RawMessage, int,
 		if err != nil || len(spans) == 0 {
 			continue
 		}
+		for _, s := range spans {
+			findings = append(findings, Finding{
+				Label: labelOr(s.Label, "injection"),
+				Score: s.Score,
+				Text:  spanText(text, s),
+			})
+		}
 		nb, _ := json.Marshal(cleaned)
 		b["text"] = nb
-		total += len(spans)
-		for _, s := range spans {
-			labelSet[labelOr(s.Label, "injection")] = struct{}{}
-		}
 	}
-	if total == 0 {
-		return result, 0, nil, nil
+	if len(findings) == 0 {
+		return result, nil, nil
 	}
 
 	newContent, err := json.Marshal(blocks)
 	if err != nil {
-		return result, 0, nil, err
+		return result, nil, err
 	}
 	res["content"] = newContent
 	newRes, err := json.Marshal(res)
 	if err != nil {
-		return result, 0, nil, err
+		return result, nil, err
 	}
-	labels := make([]string, 0, len(labelSet))
-	for l := range labelSet {
-		labels = append(labels, l)
+	return newRes, findings, nil
+}
+
+// spanText returns the original substring a span covers, using rune indices
+// (clamped), so the logged payload matches multibyte content correctly.
+func spanText(text string, s Span) string {
+	runes := []rune(text)
+	a, b := s.Start, s.End
+	if a < 0 {
+		a = 0
 	}
-	return newRes, total, labels, nil
+	if b > len(runes) {
+		b = len(runes)
+	}
+	if a >= b {
+		return ""
+	}
+	return string(runes[a:b])
 }

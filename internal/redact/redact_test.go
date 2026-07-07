@@ -48,12 +48,15 @@ func TestBuiltin_CatchesObviousInjection(t *testing.T) {
 // non-text block untouched.
 func TestRedactToolResult_PreservesStructure(t *testing.T) {
 	in := json.RawMessage(`{"content":[{"type":"text","text":"a SECRET b"},{"type":"image","data":"zzz"}],"isError":false,"meta":{"k":1}}`)
-	out, n, labels, err := RedactToolResult(in, fakeRedactor{needle: "SECRET", label: "pii"})
+	out, findings, err := RedactToolResult(in, fakeRedactor{needle: "SECRET", label: "pii"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != 1 || len(labels) != 1 || labels[0] != "pii" {
-		t.Fatalf("n=%d labels=%v, want 1 [pii]", n, labels)
+	if len(findings) != 1 || findings[0].Label != "pii" {
+		t.Fatalf("findings=%+v, want 1 with label pii", findings)
+	}
+	if findings[0].Text != "SECRET" {
+		t.Errorf("finding did not capture the stripped payload: %q", findings[0].Text)
 	}
 
 	var res map[string]json.RawMessage

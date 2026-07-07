@@ -15,7 +15,8 @@ import (
 
 type Log struct{ l *slog.Logger }
 
-// New writes JSON audit lines to w. If w is nil, stderr is used.
+// New writes JSON audit lines to w. If w is nil, stderr is used. Callers that
+// want a persistent record pass an io.MultiWriter(stderr, file).
 func New(w io.Writer) *Log {
 	if w == nil {
 		w = os.Stderr
@@ -23,15 +24,20 @@ func New(w io.Writer) *Log {
 	return &Log{l: slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: slog.LevelInfo}))}
 }
 
-// ToolCall records a gate decision on an outbound tool call.
-func (a *Log) ToolCall(tool, decision, reason string) {
-	a.l.Info("tool_call", "tool", tool, "decision", decision, "reason", reason)
-}
-
-// Redaction records that a tool result had spans stripped before delivery.
-func (a *Log) Redaction(tool string, count int, labels []string) {
-	a.l.Info("redaction", "tool", tool, "spans", count, "labels", labels)
-}
-
-// Event records anything else worth a line.
+// Event records a routine line at info level (startup, non-security events).
 func (a *Log) Event(msg string, kv ...any) { a.l.Info(msg, kv...) }
+
+// Flag records a security-relevant event at WARN level, so it stands out from
+// routine info lines and can drive an alert: `jq 'select(.level=="WARN")'`.
+// Redactions (caught injections) and denials go through here.
+func (a *Log) Flag(msg string, kv ...any) { a.l.Warn(msg, kv...) }
+
+// ToolCall records a gate decision. A denial is a security event → flagged at
+// WARN; an allow is routine → info.
+func (a *Log) ToolCall(tool, decision, reason string) {
+	if decision == "deny" {
+		a.Flag("tool_call", "tool", tool, "decision", decision, "reason", reason)
+		return
+	}
+	a.Event("tool_call", "tool", tool, "decision", decision, "reason", reason)
+}

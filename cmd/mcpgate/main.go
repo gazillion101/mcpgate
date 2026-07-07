@@ -10,10 +10,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -39,7 +41,18 @@ func main() {
 	}
 	cfg.Apply(fs.overrides()) // explicitly-set flags beat the file
 
-	a := audit.New(os.Stderr)
+	auditW := io.Writer(os.Stderr)
+	if cfg.AuditFile != "" {
+		path := expandHome(cfg.AuditFile)
+		_ = os.MkdirAll(filepath.Dir(path), 0o755)
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			fatal("open audit file: " + err.Error())
+		}
+		defer f.Close()
+		auditW = io.MultiWriter(os.Stderr, f)
+	}
+	a := audit.New(auditW)
 	gate := policy.New(classesFrom(cfg.ReadTools, cfg.ActionTools), cfg.AllowActions, cfg.ArgAllow)
 	redactor := buildRedactor(cfg)
 	fw := hook.New(gate, redactor, a)
@@ -141,6 +154,16 @@ func splitArgs(args []string) (flagArgs, upstream []string) {
 		}
 	}
 	return args, nil
+}
+
+// expandHome resolves a leading ~/ against the user's home directory.
+func expandHome(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return path
 }
 
 func fatal(msg string) {

@@ -18,6 +18,7 @@ type flags struct {
 	httpListen string // if set, run as a Streamable-HTTP reverse proxy on this addr
 	upstream   string // upstream MCP server URL (with --http-listen)
 	argAllow   string // per-tool argument allowlists: "tool=glob,glob;tool2=glob"
+	auditFile  string // append JSONL audit here (in addition to stderr)
 
 	set *flag.FlagSet
 }
@@ -34,6 +35,7 @@ func newFlags() *flags {
 	f.set.StringVar(&f.httpListen, "http-listen", "", "run as a Streamable-HTTP proxy on this addr (e.g. 127.0.0.1:9000) instead of stdio")
 	f.set.StringVar(&f.upstream, "upstream", "", "upstream MCP server URL (required with --http-listen)")
 	f.set.StringVar(&f.argAllow, "arg-allow", "", `per-tool argument allowlist, e.g. "send_email=*@me.com,boss@x.com;post=https://hooks.acme.com/*"`)
+	f.set.StringVar(&f.auditFile, "audit-file", "", "append JSONL audit to this file (in addition to stderr)")
 	return f
 }
 
@@ -75,6 +77,9 @@ func (f *flags) overrides() config.Overrides {
 	}
 	if set["upstream"] {
 		o.Upstream = &f.upstream
+	}
+	if set["audit-file"] {
+		o.AuditFile = &f.auditFile
 	}
 	return o
 }

@@ -142,7 +142,7 @@ internal/policy the capability gate (fail-closed)
 internal/extract email/URL extraction from tool args (for argument allowlists)
 internal/redact the ingress filter: builtin stub + GLiNER sidecar client
 internal/config JSON config loading; flags override the file
-internal/audit  one JSON line per call / decision / redaction (stderr)
+internal/audit  JSONL audit; caught injections + denials flagged at WARN with payload
 sidecar/       GLiNER redaction service (Python)
 ```
 
@@ -151,8 +151,10 @@ sidecar/       GLiNER redaction service (Python)
 Spike. Working end-to-end: transparent stdio pump **and** Streamable-HTTP
 reverse proxy (with in-stream SSE redaction), the capability gate with
 per-argument allowlists (deny `send_email` to any address off the list), the
-GLiNER filter, a JSON config file (`--config`; flags override it), the audit
-trail, a test suite that doubles as a spec, and a demo
+GLiNER filter, a JSON config file (`--config`; flags override it), an audit
+trail that flags every caught injection and denial at WARN — with the payload —
+and can persist to a file (`--audit-file`), a test suite that doubles as a spec,
+and a demo
 agent that follows an injected instruction and hits the gate (`./demo/run.sh`,
 `./demo/http.sh`). Not done: an interactive approval path for `gated` tools,
 best-effort taint, and the forward-MITM (fleet) proxy mode.

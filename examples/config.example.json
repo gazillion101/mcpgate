@@ -8,5 +8,7 @@
 
   "argAllow": {
     "send_email": ["*@yourcompany.com"]
-  }
+  },
+
+  "auditFile": "~/.local/share/mcpgate/audit.jsonl"
 }
