@@ -43,7 +43,8 @@ sidecar/.venv/bin/python sidecar/redactor.py   # GLiNER filter on :8731 (optiona
 Spike. Working: transparent stdio pump AND Streamable-HTTP reverse proxy (URL
 swap, in-stream SSE redaction, `internal/proxy/http.go`), capability gate,
 GLiNER filter, per-argument allowlists (`--arg-allow`, deny send to non-listed
-recipients; `internal/extract`), audit, a test suite that doubles as a spec
+recipients; `internal/extract`), a JSON config file (`--config`, flags override
+it; `internal/config`), audit, a test suite that doubles as a spec
 (`TestMoneyShot_...`, `TestHTTP_*`, `TestGate_ArgAllowlist`), and a demo agent
 (`cmd/agent`) that follows an injected instruction live and hits the gate. Both transports run the
 same `Hook`. Module path is `github.com/gazillion101/mcpgate` (personal nick,

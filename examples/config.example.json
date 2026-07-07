@@ -1,0 +1,12 @@
+{
+  "redact": "gliner",
+  "redactUrl": "http://127.0.0.1:8731/redact",
+  "threshold": 0.5,
+
+  "readTools": ["read_email", "search_inbox"],
+  "actionTools": ["send_email", "delete_email"],
+
+  "argAllow": {
+    "send_email": ["*@yourcompany.com"]
+  }
+}

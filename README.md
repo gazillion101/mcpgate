@@ -83,6 +83,26 @@ mcpgate terminates the local hop and makes its own verified HTTPS connection
 upstream — no MITM/CA needed. Streamed replies (SSE) are redacted event-by-event
 as they flow; `Mcp-Session-Id` / `Authorization` pass through untouched.
 
+## Configuration
+
+Past a couple of servers, flags get unwieldy — put the policy in a JSON file and
+pass `--config`. Any flag you also give on the command line **overrides** the
+file (handy for one-off tweaks). See [`examples/config.example.json`](examples/config.example.json):
+
+```json
+{
+  "redact": "gliner",
+  "readTools": ["read_email", "search_inbox"],
+  "actionTools": ["send_email", "delete_email"],
+  "argAllow": { "send_email": ["*@yourcompany.com"] }
+}
+```
+
+```jsonc
+"gmail": { "command": "mcpgate",
+           "args": ["--config", "/etc/mcpgate/gmail.json", "--", "npx", "@mcp/server-gmail"] }
+```
+
 ## Quickstart / demo
 
 ```bash
@@ -119,7 +139,9 @@ internal/proxy transparent stdio pump (spawn child, two pumps, hook dispatch)
 internal/jsonrpc  line-framed JSON-RPC, byte-faithful passthrough
 internal/hook  the firewall: gate on tools/call request, redact on result
 internal/policy the capability gate (fail-closed)
+internal/extract email/URL extraction from tool args (for argument allowlists)
 internal/redact the ingress filter: builtin stub + GLiNER sidecar client
+internal/config JSON config loading; flags override the file
 internal/audit  one JSON line per call / decision / redaction (stderr)
 sidecar/       GLiNER redaction service (Python)
 ```
@@ -129,7 +151,8 @@ sidecar/       GLiNER redaction service (Python)
 Spike. Working end-to-end: transparent stdio pump **and** Streamable-HTTP
 reverse proxy (with in-stream SSE redaction), the capability gate with
 per-argument allowlists (deny `send_email` to any address off the list), the
-GLiNER filter, the audit trail, a test suite that doubles as a spec, and a demo
+GLiNER filter, a JSON config file (`--config`; flags override it), the audit
+trail, a test suite that doubles as a spec, and a demo
 agent that follows an injected instruction and hits the gate (`./demo/run.sh`,
 `./demo/http.sh`). Not done: an interactive approval path for `gated` tools,
 best-effort taint, and the forward-MITM (fleet) proxy mode.

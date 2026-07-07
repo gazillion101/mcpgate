@@ -1,8 +1,13 @@
 package main
 
-import "flag"
+import (
+	"flag"
+
+	"github.com/gazillion101/mcpgate/internal/config"
+)
 
 type flags struct {
+	configPath string // JSON config file; flags below override it
 	redact       string // builtin | gliner | off
 	redactURL    string // gliner sidecar endpoint
 	threshold    float64
@@ -19,6 +24,7 @@ type flags struct {
 
 func newFlags() *flags {
 	f := &flags{set: flag.NewFlagSet("mcpgate", flag.ContinueOnError)}
+	f.set.StringVar(&f.configPath, "config", "", "path to a JSON config file (flags below override it)")
 	f.set.StringVar(&f.redact, "redact", "builtin", "ingress filter: builtin | gliner | off")
 	f.set.StringVar(&f.redactURL, "redact-url", "http://127.0.0.1:8731/redact", "GLiNER sidecar URL")
 	f.set.Float64Var(&f.threshold, "threshold", 0.5, "GLiNER score threshold")
@@ -32,3 +38,43 @@ func newFlags() *flags {
 }
 
 func (f *flags) parse(args []string) error { return f.set.Parse(args) }
+
+// overrides returns only the flags the user explicitly set, so they take
+// precedence over the config file (and unset flags leave the file's values).
+func (f *flags) overrides() config.Overrides {
+	set := map[string]bool{}
+	f.set.Visit(func(fl *flag.Flag) { set[fl.Name] = true })
+
+	var o config.Overrides
+	if set["redact"] {
+		o.Redact = &f.redact
+	}
+	if set["redact-url"] {
+		o.RedactURL = &f.redactURL
+	}
+	if set["threshold"] {
+		o.Threshold = &f.threshold
+	}
+	if set["allow-actions"] {
+		o.AllowActions = &f.allowActions
+	}
+	if set["read-tools"] {
+		v := splitList(f.readTools)
+		o.ReadTools = &v
+	}
+	if set["action-tools"] {
+		v := splitList(f.actionTools)
+		o.ActionTools = &v
+	}
+	if set["arg-allow"] {
+		v := parseArgAllow(f.argAllow)
+		o.ArgAllow = &v
+	}
+	if set["http-listen"] {
+		o.HTTPListen = &f.httpListen
+	}
+	if set["upstream"] {
+		o.Upstream = &f.upstream
+	}
+	return o
+}

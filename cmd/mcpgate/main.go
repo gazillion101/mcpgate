@@ -18,6 +18,7 @@ import (
 	"syscall"
 
 	"github.com/gazillion101/mcpgate/internal/audit"
+	"github.com/gazillion101/mcpgate/internal/config"
 	"github.com/gazillion101/mcpgate/internal/hook"
 	"github.com/gazillion101/mcpgate/internal/policy"
 	"github.com/gazillion101/mcpgate/internal/proxy"
@@ -32,23 +33,29 @@ func main() {
 		fatal(err.Error())
 	}
 
+	cfg, err := config.Load(fs.configPath)
+	if err != nil {
+		fatal(err.Error())
+	}
+	cfg.Apply(fs.overrides()) // explicitly-set flags beat the file
+
 	a := audit.New(os.Stderr)
-	gate := policy.New(buildClasses(fs.readTools, fs.actionTools), fs.allowActions, parseArgAllow(fs.argAllow))
-	redactor := buildRedactor(fs, a)
+	gate := policy.New(classesFrom(cfg.ReadTools, cfg.ActionTools), cfg.AllowActions, cfg.ArgAllow)
+	redactor := buildRedactor(cfg)
 	fw := hook.New(gate, redactor, a)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	// HTTP mode: reverse-proxy a remote Streamable-HTTP MCP server.
-	if fs.httpListen != "" {
-		if fs.upstream == "" {
-			fatal("--upstream is required with --http-listen")
+	if cfg.HTTPListen != "" {
+		if cfg.Upstream == "" {
+			fatal("upstream is required with http-listen (set it in the config or with --upstream)")
 		}
-		hp := &proxy.HTTPProxy{Upstream: fs.upstream, Hook: fw}
-		a.Event("mcpgate_http_start", "listen", fs.httpListen, "upstream", fs.upstream,
-			"redactor", redactor.Name(), "allow_actions", fs.allowActions)
-		srv := &http.Server{Addr: fs.httpListen, Handler: http.HandlerFunc(hp.ServeHTTP)}
+		hp := &proxy.HTTPProxy{Upstream: cfg.Upstream, Hook: fw}
+		a.Event("mcpgate_http_start", "listen", cfg.HTTPListen, "upstream", cfg.Upstream,
+			"redactor", redactor.Name(), "allow_actions", cfg.AllowActions)
+		srv := &http.Server{Addr: cfg.HTTPListen, Handler: http.HandlerFunc(hp.ServeHTTP)}
 		go func() { <-ctx.Done(); _ = srv.Close() }()
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fatal(err.Error())
@@ -63,7 +70,7 @@ func main() {
 	a.Event("mcpgate_start",
 		"upstream", strings.Join(serverCmd, " "),
 		"redactor", redactor.Name(),
-		"allow_actions", fs.allowActions)
+		"allow_actions", cfg.AllowActions)
 	cmd := exec.CommandContext(ctx, serverCmd[0], serverCmd[1:]...)
 	if err := proxy.Run(ctx, os.Stdin, os.Stdout, cmd, fw); err != nil {
 		a.Event("mcpgate_exit", "err", err.Error())
@@ -71,12 +78,12 @@ func main() {
 }
 
 // buildRedactor selects the ingress filter backend.
-func buildRedactor(fs *flags, a *audit.Log) redact.Redactor {
-	switch fs.redact {
+func buildRedactor(cfg *config.Config) redact.Redactor {
+	switch cfg.Redact {
 	case "off":
 		return noopRedactor{}
 	case "gliner":
-		return redact.NewGLiNER(fs.redactURL, nil, fs.threshold)
+		return redact.NewGLiNER(cfg.RedactURL, nil, cfg.Threshold)
 	default: // "builtin"
 		return redact.NewBuiltin()
 	}
@@ -87,12 +94,12 @@ type noopRedactor struct{}
 func (noopRedactor) Redact(t string) (string, []redact.Span, error) { return t, nil, nil }
 func (noopRedactor) Name() string                                   { return "off" }
 
-func buildClasses(read, action string) map[string]policy.Class {
+func classesFrom(read, action []string) map[string]policy.Class {
 	classes := map[string]policy.Class{}
-	for _, t := range splitList(read) {
+	for _, t := range read {
 		classes[t] = policy.Read
 	}
-	for _, t := range splitList(action) {
+	for _, t := range action {
 		classes[t] = policy.Action
 	}
 	return classes
