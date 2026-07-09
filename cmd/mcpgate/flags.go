@@ -28,7 +28,7 @@ func newFlags() *flags {
 	f.set.StringVar(&f.configPath, "config", "", "path to a JSON config file (flags below override it)")
 	f.set.StringVar(&f.redact, "redact", "builtin", "ingress filter: builtin | classifier | off")
 	f.set.StringVar(&f.redactURL, "redact-url", "http://127.0.0.1:8731/detect", "detector sidecar URL")
-	f.set.Float64Var(&f.threshold, "threshold", 0.1, "detector injection-probability threshold (0-1; lower = more sensitive)")
+	f.set.Float64Var(&f.threshold, "threshold", 0.3, "detector injection-probability threshold (0-1; lower = more sensitive)")
 	f.set.BoolVar(&f.allowActions, "allow-actions", false, "permit action tools without approval (demo/testing)")
 	f.set.StringVar(&f.readTools, "read-tools", "", "comma-separated tools to classify as read")
 	f.set.StringVar(&f.actionTools, "action-tools", "", "comma-separated tools to classify as action (gated)")

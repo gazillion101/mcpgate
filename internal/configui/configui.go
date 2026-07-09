@@ -210,7 +210,7 @@ async function load(){
     const r = await fetch('/config',{headers:hdr});
     if(!r.ok){ status('cannot load config ('+r.status+') — open the URL printed by mcpgate, with ?token=', 'err'); return; }
     const c = await r.json();
-    $('#redact').value=c.redact||'builtin'; $('#threshold').value=c.threshold??0.1; $('#redactUrl').value=c.redactUrl||'';
+    $('#redact').value=c.redact||'builtin'; $('#threshold').value=c.threshold??0.3; $('#redactUrl').value=c.redactUrl||'';
     $('#allowActions').checked=!!c.allowActions;
     $('#readTools').value=(c.readTools||[]).join(', '); $('#actionTools').value=(c.actionTools||[]).join(', '); $('#gatedTools').value=(c.gatedTools||[]).join(', ');
     $('#auditFile').value=c.auditFile||'';
@@ -220,7 +220,7 @@ async function load(){
 }
 async function save(){
   const c = {
-    redact:$('#redact').value, redactUrl:$('#redactUrl').value, threshold:parseFloat($('#threshold').value)||0.1,
+    redact:$('#redact').value, redactUrl:$('#redactUrl').value, threshold:parseFloat($('#threshold').value)||0.3,
     allowActions:$('#allowActions').checked,
     readTools:list('readTools'), actionTools:list('actionTools'), gatedTools:list('gatedTools'),
     argAllow:parseAllow($('#argAllow').value), auditFile:$('#auditFile').value

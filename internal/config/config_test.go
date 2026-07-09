@@ -11,7 +11,7 @@ func TestLoad_DefaultsWhenNoPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Redact != "builtin" || c.Threshold != 0.1 || c.AllowActions {
+	if c.Redact != "builtin" || c.Threshold != 0.3 || c.AllowActions {
 		t.Errorf("unexpected defaults: %+v", c)
 	}
 }
@@ -33,7 +33,7 @@ func TestLoad_FileMergesOntoDefaults(t *testing.T) {
 	if c.Redact != "classifier" {
 		t.Errorf("redact = %q, want classifier", c.Redact)
 	}
-	if c.Threshold != 0.1 || c.RedactURL == "" {
+	if c.Threshold != 0.3 || c.RedactURL == "" {
 		t.Errorf("omitted keys lost their defaults: threshold=%v url=%q", c.Threshold, c.RedactURL)
 	}
 	if len(c.ActionTools) != 1 || c.ActionTools[0] != "send_email" {

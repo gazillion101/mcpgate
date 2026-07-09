@@ -26,7 +26,7 @@ type Classifier struct {
 
 func NewClassifier(url string, threshold float64) *Classifier {
 	if threshold <= 0 {
-		threshold = 0.1 // recall-favoring default; the filter is paired with the fail-closed gate
+		threshold = 0.3 // recall-favoring default; the filter is paired with the fail-closed gate
 	}
 	return &Classifier{
 		url:    url,

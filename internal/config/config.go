@@ -32,7 +32,7 @@ func Default() *Config {
 	return &Config{
 		Redact:    "builtin",
 		RedactURL: "http://127.0.0.1:8731/detect",
-		Threshold: 0.1,
+		Threshold: 0.3,
 	}
 }
 
