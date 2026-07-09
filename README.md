@@ -34,7 +34,7 @@ MCP is exactly two message types:
 
 ## Two controls, on purpose
 
-- **Filter — fails open.** Redaction (GLiNER) is a detector; an injection
+- **Filter — fails open.** Redaction (the ModernBERT classifier) is a detector; an injection
   crafted not to match its labels sails through. It thins the volume; it is not
   the boundary.
 - **Gate — fails closed.** An action tool is denied unless it was affirmatively
@@ -63,7 +63,7 @@ Change the server's launch command in your MCP client config:
 "gmail": { "command": "mcpgate",
            "args": ["--action-tools", "send_email,delete_email",
                     "--read-tools", "read_email,search",
-                    "--redact", "gliner", "--",
+                    "--redact", "classifier", "--",
                     "npx", "@mcp/server-gmail"] }
 ```
 
@@ -76,7 +76,7 @@ transport — by swapping the URL the client points at:
 ```
 ```bash
 mcpgate --http-listen 127.0.0.1:9000 --upstream https://mcp.acme.com/mcp \
-        --action-tools send_email --read-tools read_email --redact gliner
+        --action-tools send_email --read-tools read_email --redact classifier
 ```
 
 mcpgate terminates the local hop and makes its own verified HTTPS connection
@@ -91,7 +91,7 @@ file (handy for one-off tweaks). See [`examples/config.example.json`](examples/c
 
 ```json
 {
-  "redact": "gliner",
+  "redact": "classifier",
   "readTools": ["read_email", "search_inbox"],
   "actionTools": ["send_email", "delete_email"],
   "argAllow": { "send_email": ["*@yourcompany.com"] }
@@ -128,9 +128,9 @@ mcpgate config-ui --config ~/.config/mcpgate/gmail.json
 ```bash
 go build -o /tmp/mcpgate ./cmd/mcpgate
 go build -o /tmp/fakemcp ./cmd/fakemcp
-./demo/run.sh            # runs the poisoned-email demo, builtin + GLiNER
+./demo/run.sh            # runs the poisoned-email demo, builtin + classifier
 
-# GLiNER filter (optional, better recall than the built-in stub):
+# ModernBERT detector (optional, far better recall than the built-in stub):
 python3 -m venv sidecar/.venv && sidecar/.venv/bin/pip install -r sidecar/requirements.txt
 sidecar/.venv/bin/python sidecar/redactor.py      # serves :8731
 ```
@@ -189,12 +189,12 @@ internal/jsonrpc  line-framed JSON-RPC, byte-faithful passthrough
 internal/hook  the firewall: gate on tools/call request, redact on result
 internal/policy the capability gate (fail-closed)
 internal/extract email/URL extraction from tool args (for argument allowlists)
-internal/redact the ingress filter: builtin stub + GLiNER sidecar client
+internal/redact the ingress filter: builtin stub + ModernBERT classifier sidecar client
 internal/config JSON config loading; flags override the file
 internal/audit  JSONL audit; caught injections + denials flagged at WARN with payload
 internal/logview read-only localhost audit viewer (`mcpgate ui`)
 internal/configui token-gated localhost config editor (`mcpgate config-ui`)
-sidecar/       GLiNER redaction service (Python)
+sidecar/       ModernBERT detection service (Python)
 ```
 
 ## Status
@@ -202,7 +202,7 @@ sidecar/       GLiNER redaction service (Python)
 Spike. Working end-to-end: transparent stdio pump **and** Streamable-HTTP
 reverse proxy (with in-stream SSE redaction), the capability gate with
 per-argument allowlists (deny `send_email` to any address off the list), the
-GLiNER filter, a JSON config file (`--config`; flags override it), an audit
+ModernBERT-classifier filter, a JSON config file (`--config`; flags override it), an audit
 trail that flags every caught injection and denial at WARN — with the payload —
 and can persist to a file (`--audit-file`), a read-only localhost log viewer
 (`mcpgate ui`), a token-gated localhost config editor (`mcpgate config-ui`), a

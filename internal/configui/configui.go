@@ -167,10 +167,10 @@ button{background:var(--accent);color:#04101f;border:0;border-radius:6px;padding
   <section>
     <h2>Redaction (ingress filter)</h2>
     <div class="row">
-      <div><label>backend</label><select id="redact"><option>builtin</option><option>gliner</option><option>off</option></select></div>
+      <div><label>backend</label><select id="redact"><option>builtin</option><option>classifier</option><option>off</option></select></div>
       <div><label>threshold</label><input id="threshold" type="number" step="0.05" min="0" max="1"></div>
     </div>
-    <label>gliner sidecar URL</label><input id="redactUrl" type="text">
+    <label>detector sidecar URL</label><input id="redactUrl" type="text">
   </section>
   <section>
     <h2>Gate</h2>
@@ -210,7 +210,7 @@ async function load(){
     const r = await fetch('/config',{headers:hdr});
     if(!r.ok){ status('cannot load config ('+r.status+') — open the URL printed by mcpgate, with ?token=', 'err'); return; }
     const c = await r.json();
-    $('#redact').value=c.redact||'builtin'; $('#threshold').value=c.threshold??0.5; $('#redactUrl').value=c.redactUrl||'';
+    $('#redact').value=c.redact||'builtin'; $('#threshold').value=c.threshold??0.1; $('#redactUrl').value=c.redactUrl||'';
     $('#allowActions').checked=!!c.allowActions;
     $('#readTools').value=(c.readTools||[]).join(', '); $('#actionTools').value=(c.actionTools||[]).join(', '); $('#gatedTools').value=(c.gatedTools||[]).join(', ');
     $('#auditFile').value=c.auditFile||'';
@@ -220,7 +220,7 @@ async function load(){
 }
 async function save(){
   const c = {
-    redact:$('#redact').value, redactUrl:$('#redactUrl').value, threshold:parseFloat($('#threshold').value)||0.5,
+    redact:$('#redact').value, redactUrl:$('#redactUrl').value, threshold:parseFloat($('#threshold').value)||0.1,
     allowActions:$('#allowActions').checked,
     readTools:list('readTools'), actionTools:list('actionTools'), gatedTools:list('gatedTools'),
     argAllow:parseAllow($('#argAllow').value), auditFile:$('#auditFile').value

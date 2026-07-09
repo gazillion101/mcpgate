@@ -7,9 +7,10 @@ import (
 
 // Builtin is a tiny regex stub so the pipe is demoable without the model. It
 // catches only the most obvious, low-effort injection phrasing — it is NOT the
-// real detector. GLiNER (see gliner.go) replaces it: same Redactor interface,
-// far better recall on paraphrased/novel injections. The builtin exists so the
-// transport and result-rewriting are provable before the model is wired.
+// real detector. The Classifier (see classifier.go) replaces it: same Redactor
+// interface, backed by a distilled ModernBERT detector with far better recall on
+// paraphrased/novel injections. The builtin exists so the transport and
+// result-rewriting are provable without the model.
 type Builtin struct{ pats []*regexp.Regexp }
 
 var builtinPatterns = []string{

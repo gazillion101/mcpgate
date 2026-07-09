@@ -13,9 +13,9 @@ import (
 )
 
 type Config struct {
-	Redact       string              `json:"redact,omitempty"`       // builtin | gliner | off
-	RedactURL    string              `json:"redactUrl,omitempty"`    // gliner sidecar endpoint
-	Threshold    float64             `json:"threshold,omitempty"`    // gliner score threshold
+	Redact       string              `json:"redact,omitempty"`       // builtin | classifier | off
+	RedactURL    string              `json:"redactUrl,omitempty"`    // detector sidecar endpoint
+	Threshold    float64             `json:"threshold,omitempty"`    // detector injection-probability threshold
 	AllowActions bool                `json:"allowActions,omitempty"` // permit action tools without a grant
 	ReadTools    []string            `json:"readTools,omitempty"`    // classified read (results filtered, calls flow)
 	ActionTools  []string            `json:"actionTools,omitempty"`  // classified action (calls gated)
@@ -31,8 +31,8 @@ type Config struct {
 func Default() *Config {
 	return &Config{
 		Redact:    "builtin",
-		RedactURL: "http://127.0.0.1:8731/redact",
-		Threshold: 0.5,
+		RedactURL: "http://127.0.0.1:8731/detect",
+		Threshold: 0.1,
 	}
 }
 

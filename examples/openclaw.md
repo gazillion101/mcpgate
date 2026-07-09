@@ -57,7 +57,7 @@ actions (calls are gated). Use your servers' real tool names.
         "--read-tools",   "read_email,search_inbox",
         "--action-tools", "send_email,delete_email",
         "--arg-allow",    "send_email=*@yourcompany.com",  // only send to your own domain
-        "--redact",       "gliner",
+        "--redact",       "classifier",
         "--",
         "npx", "@acme/mcp-email"          // ← the real server, spawned by mcpgate
       ]
@@ -80,7 +80,7 @@ Run an mcpgate reverse proxy alongside OpenClaw:
 
 ```bash
 mcpgate --http-listen 127.0.0.1:9000 --upstream https://mcp.acme.com/mcp \
-        --read-tools search --action-tools create_ticket --redact gliner
+        --read-tools search --action-tools create_ticket --redact classifier
 ```
 
 and point OpenClaw at the local endpoint:

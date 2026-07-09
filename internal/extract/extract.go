@@ -1,10 +1,10 @@
 // Package extract pulls concrete identifiers (email addresses, URLs) out of a
 // tool call's arguments, so the gate can allowlist them.
 //
-// This is GLiNER's lesson applied correctly: cooperative extraction feeding a
+// This is the cooperative-extraction pattern: pull identifiers, feed a
 // deterministic gate. For structured identifiers — emails, URLs — regex is
 // actually MORE reliable than a model (no false negatives on well-formed
-// values), so that's the core. A GLiNER-backed extractor can extend this to
+// values), so that's the core. A model-backed extractor can extend this to
 // fuzzy entity types (person, org) the regex can't see; the gate logic is the
 // same either way.
 package extract

@@ -109,8 +109,9 @@ func buildRedactor(cfg *config.Config) redact.Redactor {
 	switch cfg.Redact {
 	case "off":
 		return noopRedactor{}
-	case "gliner":
-		return redact.NewGLiNER(cfg.RedactURL, nil, cfg.Threshold)
+	case "classifier":
+		// ModernBERT detector sidecar (sidecar/redactor.py, /detect).
+		return redact.NewClassifier(cfg.RedactURL, cfg.Threshold)
 	default: // "builtin"
 		return redact.NewBuiltin()
 	}

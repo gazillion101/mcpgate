@@ -1,6 +1,6 @@
 // Package policy is the capability gate — the fail-closed wall.
 //
-// Redaction (the GLiNER filter) fails OPEN: if it misses an injected span, the
+// Redaction (the ingress filter) fails OPEN: if it misses an injection, the
 // poison reaches the model. This gate fails CLOSED: an action tool is denied
 // unless policy affirmatively permits it, so even a fully-poisoned model cannot
 // reach a sink it was never granted. That is the boundary; redaction is only

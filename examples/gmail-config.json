@@ -1,5 +1,5 @@
 {
-  "redact": "gliner",
+  "redact": "classifier",
 
   "readTools": ["list_messages", "get_message", "search"],
   "actionTools": ["send_message", "delete_message", "modify_labels"],

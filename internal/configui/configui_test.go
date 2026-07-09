@@ -63,7 +63,7 @@ func TestGetConfig_WithToken(t *testing.T) {
 func TestPostConfig_WritesFile(t *testing.T) {
 	s, path := newServer(t)
 	rec := httptest.NewRecorder()
-	r := local(http.MethodPost, "/config", `{"redact":"gliner","actionTools":["send_email"],"argAllow":{"send_email":["*@me.com"]}}`)
+	r := local(http.MethodPost, "/config", `{"redact":"classifier","actionTools":["send_email"],"argAllow":{"send_email":["*@me.com"]}}`)
 	r.Header.Set("X-MCPGate-Token", tok)
 	r.Header.Set("Origin", "http://127.0.0.1:8799")
 	s.ServeHTTP(rec, r)
@@ -74,7 +74,7 @@ func TestPostConfig_WritesFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Redact != "gliner" || len(c.ActionTools) != 1 {
+	if c.Redact != "classifier" || len(c.ActionTools) != 1 {
 		t.Errorf("config not persisted: %+v", c)
 	}
 }

@@ -8,8 +8,8 @@ import (
 
 type flags struct {
 	configPath string // JSON config file; flags below override it
-	redact       string // builtin | gliner | off
-	redactURL    string // gliner sidecar endpoint
+	redact       string // builtin | classifier | off
+	redactURL    string // detector sidecar endpoint
 	threshold    float64
 	allowActions bool
 	readTools    string // comma list classified as read (results filtered, calls allowed)
@@ -26,9 +26,9 @@ type flags struct {
 func newFlags() *flags {
 	f := &flags{set: flag.NewFlagSet("mcpgate", flag.ContinueOnError)}
 	f.set.StringVar(&f.configPath, "config", "", "path to a JSON config file (flags below override it)")
-	f.set.StringVar(&f.redact, "redact", "builtin", "ingress filter: builtin | gliner | off")
-	f.set.StringVar(&f.redactURL, "redact-url", "http://127.0.0.1:8731/redact", "GLiNER sidecar URL")
-	f.set.Float64Var(&f.threshold, "threshold", 0.5, "GLiNER score threshold")
+	f.set.StringVar(&f.redact, "redact", "builtin", "ingress filter: builtin | classifier | off")
+	f.set.StringVar(&f.redactURL, "redact-url", "http://127.0.0.1:8731/detect", "detector sidecar URL")
+	f.set.Float64Var(&f.threshold, "threshold", 0.1, "detector injection-probability threshold (0-1; lower = more sensitive)")
 	f.set.BoolVar(&f.allowActions, "allow-actions", false, "permit action tools without approval (demo/testing)")
 	f.set.StringVar(&f.readTools, "read-tools", "", "comma-separated tools to classify as read")
 	f.set.StringVar(&f.actionTools, "action-tools", "", "comma-separated tools to classify as action (gated)")

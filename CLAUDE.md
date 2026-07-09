@@ -13,12 +13,15 @@ pumps JSON-RPC through, and applies two controls. See [README.md](README.md).
 - **Gate is the boundary; filter is a layer.** The capability gate on
   `tools/call` requests fails **closed** — an action tool is denied unless
   granted. Redaction of tool results fails **open**. Lead on the gate.
-- **GLiNER is for cooperative extraction, not injection detection.** Proven in
-  the demo: GLiNER (`gliner_small`) returns zero spans for "prompt injection"
-  labels even at threshold 0.2, but tags `attacker@evil.example` for "email
-  address". So use it to extract exfil targets/PII from tool-call **arguments**
-  (feeding the deterministic gate), NOT to "detect injections". An instruction
-  isn't an entity.
+- **A non-reasoning classifier detects injections; the reasoning is distilled
+  out.** A guard LLM that READS untrusted content to judge it can be injected by
+  that content. So the ingress filter is a distilled, non-injectable **ModernBERT
+  classifier** (`../injection-detector`, HF `siberiancat/modernbert-prompt-injection`),
+  called via the `/detect` sidecar. It's a FILTER — fails open — never the
+  boundary. (GLiNER was tried first and dropped: it's an entity extractor and
+  returns zero spans for "prompt injection" labels. Cooperative entity extraction
+  still has a place — arg allowlists in `internal/extract` — just not injection
+  detection. An instruction isn't an entity.)
 - **No taint tracing through the model.** The proxy can't follow dataflow
   through the LLM (black box). Capability gating is enforced on the tool
   (decidable); cross-model taint is best-effort only.
@@ -35,14 +38,14 @@ pumps JSON-RPC through, and applies two controls. See [README.md](README.md).
 ## Test / run
 ```bash
 go build ./... && go vet ./...
-./demo/run.sh                                  # poisoned-email demo, builtin + GLiNER
-sidecar/.venv/bin/python sidecar/redactor.py   # GLiNER filter on :8731 (optional)
+./demo/run.sh                                  # poisoned-email demo, builtin + classifier
+sidecar/.venv/bin/python sidecar/redactor.py   # ModernBERT detector on :8731 (--redact classifier)
 ```
 
 ## Status
 Spike. Working: transparent stdio pump AND Streamable-HTTP reverse proxy (URL
 swap, in-stream SSE redaction, `internal/proxy/http.go`), capability gate,
-GLiNER filter, per-argument allowlists (`--arg-allow`, deny send to non-listed
+ModernBERT-classifier filter (`../injection-detector` via the `/detect` sidecar), per-argument allowlists (`--arg-allow`, deny send to non-listed
 recipients; `internal/extract`), a JSON config file (`--config`, flags override
 it; `internal/config`), audit — caught injections + denials flagged at WARN with
 the payload span, optional `--audit-file` JSONL sink — a read-only localhost log

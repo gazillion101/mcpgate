@@ -1,6 +1,6 @@
-// Package redact is the ingress filter: it strips dangerous spans out of tool
-// results before they reach the model. This is the GLiNER role — a
-// description-conditioned span tagger over untrusted content.
+// Package redact is the ingress filter: it screens tool results before they
+// reach the model and quarantines injection content. The real backend is a
+// distilled ModernBERT detector (see classifier.go); Builtin is a regex stub.
 //
 // It is a FILTER, not the boundary. It fails open: an injection crafted to not
 // match the labels sails through. Pair it with the policy gate (which fails

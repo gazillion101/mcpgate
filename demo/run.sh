@@ -30,10 +30,10 @@ echo "### built-in stub filter (no model needed)"
 run builtin
 
 if curl -s --max-time 2 http://127.0.0.1:8731/health 2>/dev/null | grep -q '"ok":true'; then
-  echo "### GLiNER filter (sidecar on :8731)"
-  run gliner --redact-url http://127.0.0.1:8731/redact
+  echo "### ModernBERT classifier filter (sidecar on :8731)"
+  run classifier --redact-url http://127.0.0.1:8731/detect
 else
-  echo "### GLiNER filter skipped — start it with:"
+  echo "### classifier filter skipped — start it with:"
   echo "    sidecar/.venv/bin/python sidecar/redactor.py"
 fi
 rm -f "$IN"

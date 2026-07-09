@@ -1,71 +1,88 @@
-"""GLiNER redaction sidecar for mcpgate.
+"""ModernBERT prompt-injection detection sidecar for mcpgate.
 
-A local HTTP service the Go proxy calls to find spans of a tool result that
-match natural-language labels describing injection content. Runs out of process
-so the proxy stays a small Go binary; the model is the only heavy dependency and
-it lives here, in the user's trust boundary.
+A local HTTP service the Go proxy calls to score a tool result for prompt
+injection. Runs out of process so the proxy stays a small Go binary; the model
+(a distilled, non-injectable ModernBERT classifier —
+github.com/gazillion101/injection-detector,
+huggingface.co/siberiancat/modernbert-prompt-injection) is the only heavy
+dependency and lives here, inside the user's trust boundary.
 
-    POST /redact  {"text": "...", "labels": ["..."], "threshold": 0.5}
-      -> {"spans": [{"start": <rune>, "end": <rune>, "label": "...", "score": ...}]}
+    POST /detect  {"text": "..."}  ->  {"score": <P(injection) in [0,1]>}
 
-GLiNER returns character offsets into the Python string (code points), which is
-exactly the rune index the Go side splices on — no conversion needed.
+It is the FILTER, not the boundary. It fails open: a novel attack it scores
+below threshold passes through. The capability gate (fail-closed) is what holds
+when it does.
 
-This is the FILTER, not the boundary. It fails open: an injection crafted not to
-match the labels passes through. The capability gate is what holds when it does.
+Long inputs: the classifier is scored at its trained resolution and SLID over
+the whole input as overlapping windows, taking the max. That covers a long tool
+result end-to-end (no fixed-length truncation blind spot) while keeping each
+window at the length the model is reliable at — so an injection buried deep in a
+long, mostly-benign result isn't truncated away *or* diluted to a low score.
 """
 
-import os
 import functools
+import os
 
 from fastapi import FastAPI
 from pydantic import BaseModel
-from gliner import GLiNER
 
-MODEL_NAME = os.environ.get("MCPGATE_GLINER_MODEL", "urchade/gliner_small-v2.1")
+MODEL_NAME = os.environ.get("MCPGATE_DETECTOR_MODEL", "siberiancat/modernbert-prompt-injection")
+# Which logit index is the "injection" class (this model: 1). Overridable so a
+# swapped-in model with a different label order isn't silently inverted.
+INJECTION_INDEX = int(os.environ.get("MCPGATE_DETECTOR_INJECTION_INDEX", "1"))
+# Sliding-window size (tokens) — the model's trained resolution — and overlap.
+CHUNK = int(os.environ.get("MCPGATE_DETECTOR_CHUNK", "256"))
+WINDOW_STRIDE = int(os.environ.get("MCPGATE_DETECTOR_STRIDE", "64"))
 
-app = FastAPI(title="mcpgate-gliner-sidecar")
+app = FastAPI(title="mcpgate-detector-sidecar")
 
 
 @functools.lru_cache(maxsize=1)
-def model() -> GLiNER:
-    # Loaded lazily on the first request; downloaded from HF once, then cached.
-    return GLiNER.from_pretrained(MODEL_NAME)
+def detector():
+    # Loaded lazily; downloaded from HF once, then cached.
+    import torch  # noqa: F401  (used by /detect; imported here to fail fast at load)
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    tok = AutoTokenizer.from_pretrained(MODEL_NAME)
+    mdl = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME).eval()
+    return tok, mdl
 
 
-class RedactRequest(BaseModel):
+class DetectRequest(BaseModel):
     text: str
-    labels: list[str] = []
-    threshold: float = 0.5
-
-
-DEFAULT_LABELS = [
-    "instruction directed at an AI assistant",
-    "command to ignore previous instructions",
-    "prompt injection attempt",
-    "request to exfiltrate or send data to an external address",
-]
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True, "model": MODEL_NAME, "loaded": model.cache_info().currsize > 0}
+    return {"ok": True, "model": MODEL_NAME, "loaded": detector.cache_info().currsize > 0}
 
 
-@app.post("/redact")
-def redact(req: RedactRequest) -> dict:
-    labels = req.labels or DEFAULT_LABELS
-    ents = model().predict_entities(req.text, labels, threshold=req.threshold)
-    spans = [
-        {"start": e["start"], "end": e["end"], "label": e["label"], "score": float(e["score"])}
-        for e in ents
-    ]
-    return {"spans": spans}
+@app.post("/detect")
+def detect(req: DetectRequest) -> dict:
+    import torch
+
+    tok, mdl = detector()
+    # Encode as overlapping CHUNK-token windows; nothing past the first window is
+    # dropped, and each window is scored at the model's trained resolution.
+    enc = tok(
+        req.text,
+        truncation=True,
+        max_length=CHUNK,
+        stride=WINDOW_STRIDE,
+        return_overflowing_tokens=True,
+        padding=True,
+        return_tensors="pt",
+    )
+    with torch.no_grad():
+        logits = mdl(input_ids=enc["input_ids"], attention_mask=enc["attention_mask"]).logits
+        probs = torch.softmax(logits, -1)[:, INJECTION_INDEX]
+    score = float(probs.max().item())  # flag if ANY window looks like an injection
+    return {"score": score}
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    # Warm the model before serving so the first /redact isn't a cold download.
-    model()
+    # Warm the detector so the first /detect isn't a cold download.
+    detector()
     uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("MCPGATE_SIDECAR_PORT", "8731")))

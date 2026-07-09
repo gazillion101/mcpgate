@@ -11,7 +11,7 @@ func TestLoad_DefaultsWhenNoPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Redact != "builtin" || c.Threshold != 0.5 || c.AllowActions {
+	if c.Redact != "builtin" || c.Threshold != 0.1 || c.AllowActions {
 		t.Errorf("unexpected defaults: %+v", c)
 	}
 }
@@ -20,7 +20,7 @@ func TestLoad_DefaultsWhenNoPath(t *testing.T) {
 func TestLoad_FileMergesOntoDefaults(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cfg.json")
 	if err := os.WriteFile(path, []byte(`{
-		"redact": "gliner",
+		"redact": "classifier",
 		"actionTools": ["send_email"],
 		"argAllow": {"send_email": ["*@me.com"]}
 	}`), 0o644); err != nil {
@@ -30,10 +30,10 @@ func TestLoad_FileMergesOntoDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Redact != "gliner" {
-		t.Errorf("redact = %q, want gliner", c.Redact)
+	if c.Redact != "classifier" {
+		t.Errorf("redact = %q, want classifier", c.Redact)
 	}
-	if c.Threshold != 0.5 || c.RedactURL == "" {
+	if c.Threshold != 0.1 || c.RedactURL == "" {
 		t.Errorf("omitted keys lost their defaults: threshold=%v url=%q", c.Threshold, c.RedactURL)
 	}
 	if len(c.ActionTools) != 1 || c.ActionTools[0] != "send_email" {
@@ -61,7 +61,7 @@ func TestLoad_MissingFile(t *testing.T) {
 // Flags override the file; unrelated config values are left alone.
 func TestApply_FlagsOverrideFile(t *testing.T) {
 	c := Default()
-	c.Redact = "gliner"
+	c.Redact = "classifier"
 	off, allow := "off", true
 	tools := []string{"a", "b"}
 
@@ -83,9 +83,9 @@ func TestApply_FlagsOverrideFile(t *testing.T) {
 
 func TestApply_NilOverridesChangeNothing(t *testing.T) {
 	c := Default()
-	c.Redact = "gliner"
+	c.Redact = "classifier"
 	c.Apply(Overrides{}) // all nil
-	if c.Redact != "gliner" {
+	if c.Redact != "classifier" {
 		t.Errorf("empty Overrides changed config: %q", c.Redact)
 	}
 }
